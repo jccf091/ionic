@@ -1,8 +1,8 @@
+import {ElementRef} from 'angular2/core';
 import {CSS, pointerCoord, raf, cancelRaf} from '../util/dom';
 
 
 export class ScrollView {
-  private _el: HTMLElement;
   private _js: boolean = false;
   private _top: number = 0;
   private _pos: Array<number>;
@@ -12,8 +12,9 @@ export class ScrollView {
   private _cb: Function;
   isPlaying: boolean;
 
-  constructor(ele: HTMLElement) {
-    this._el = ele;
+  constructor(
+    private _elementRef: ElementRef
+  ) {
   }
 
   getTop(): number {
@@ -21,17 +22,17 @@ export class ScrollView {
       return this._top;
     }
 
-    return this._top = this._el.scrollTop;
+    return this._top = this._elementRef.nativeElement.scrollTop;
   }
 
   setTop(top: number) {
     this._top = top;
 
     if (this._js) {
-      this._el.style[CSS.transform] = `translate3d(0px,${top * -1}px,0px)`;
+      this._elementRef.nativeElement.style[CSS.transform] = `translate3d(0px,${top * -1}px,0px)`;
 
     } else {
-      this._el.scrollTop = top;
+      this._elementRef.nativeElement.scrollTop = top;
     }
   }
 
@@ -40,7 +41,7 @@ export class ScrollView {
     // credit https://gist.github.com/dezinezync/5487119
     let self = this;
 
-    if (!self._el) {
+    if (!self._elementRef.nativeElement) {
       // invalid element
       return Promise.resolve();
     }
@@ -48,8 +49,8 @@ export class ScrollView {
     x = x || 0;
     y = y || 0;
 
-    let fromY = self._el.scrollTop;
-    let fromX = self._el.scrollLeft;
+    let fromY = self._elementRef.nativeElement.scrollTop;
+    let fromX = self._elementRef.nativeElement.scrollLeft;
 
     let xDistance = Math.abs(x - fromX);
     let yDistance = Math.abs(y - fromY);
@@ -63,7 +64,7 @@ export class ScrollView {
       function step() {
         attempts++;
 
-        if (!self._el || !self.isPlaying || attempts > maxAttempts) {
+        if (!self._elementRef.nativeElement || !self.isPlaying || attempts > maxAttempts) {
           self.isPlaying = false;
           resolve();
           return;
@@ -80,7 +81,7 @@ export class ScrollView {
         }
 
         if (fromX !== x) {
-          self._el.scrollLeft = Math.floor((easedT * (x - fromX)) + fromX);
+          self._elementRef.nativeElement.scrollLeft = Math.floor((easedT * (x - fromX)) + fromX);
         }
 
         if (easedT < 1) {
@@ -110,8 +111,8 @@ export class ScrollView {
 
   scrollToBottom(duration: number): Promise<any> {
     let y = 0;
-    if (this._el) {
-      y = this._el.scrollHeight - this._el.clientHeight;
+    if (this._elementRef.nativeElement) {
+      y = this._elementRef.nativeElement.scrollHeight - this._elementRef.nativeElement.clientHeight;
     }
     return this.scrollTo(0, y, duration);
   }
@@ -132,18 +133,18 @@ export class ScrollView {
     this._cb = onScrollCallback;
     this._pos = [];
 
-    this._el.addEventListener('touchstart', this._start.bind(this));
-    this._el.addEventListener('touchmove', this._move.bind(this));
-    this._el.addEventListener('touchend', this._end.bind(this));
+    this._elementRef.nativeElement.addEventListener('touchstart', this._start.bind(this));
+    this._elementRef.nativeElement.addEventListener('touchmove', this._move.bind(this));
+    this._elementRef.nativeElement.addEventListener('touchend', this._end.bind(this));
 
-    this._el.parentElement.classList.add('js-scroll');
+    this._elementRef.nativeElement.parentElement.classList.add('js-scroll');
 
     return () => {
-      this._el.removeEventListener('touchstart', this._start.bind(this));
-      this._el.removeEventListener('touchmove', this._move.bind(this));
-      this._el.removeEventListener('touchend', this._end.bind(this));
+      this._elementRef.nativeElement.removeEventListener('touchstart', this._start.bind(this));
+      this._elementRef.nativeElement.removeEventListener('touchmove', this._move.bind(this));
+      this._elementRef.nativeElement.removeEventListener('touchend', this._end.bind(this));
 
-      this._el.parentElement.classList.remove('js-scroll');
+      this._elementRef.nativeElement.parentElement.classList.remove('js-scroll');
     };
   }
 
@@ -190,7 +191,7 @@ export class ScrollView {
   private _setMax() {
     if (!this._max) {
       // ******** DOM READ ****************
-      this._max = (this._el.offsetHeight - this._el.parentElement.offsetHeight + this._el.parentElement.offsetTop);
+      this._max = (this._elementRef.nativeElement.offsetHeight - this._elementRef.nativeElement.parentElement.offsetHeight + this._elementRef.nativeElement.parentElement.offsetTop);
     }
   }
 
@@ -271,7 +272,7 @@ export class ScrollView {
   destroy() {
     this._velocity = 0;
     this.stop();
-    this._el = null;
+    this._elementRef.nativeElement = null;
   }
 
 }
